@@ -1,71 +1,144 @@
-import styles from './styles.module.css';
-import { ChangeEvent, useState } from 'react';
+//HOOKS
+import { ChangeEvent, useEffect, useState } from "react";
+
+// ESTILO DA TELA
+import { Container } from "./pages/tableCompanies/styles";
+
+// TIPO DO OBJETO EMPRESA
+import { typeObjectCompanies } from "./types/typeObjectCompanies";
+
+// REDUCER
+import { reducerFilters } from "./reducers/reducerFilters";
 
 const App = () => {
+  // STATE QUE ARMEZENA O ARRAY DE EMPRESAS PARA ACESSAR E FILTRAR NA TELA
+  const [stateCompanies, setStateCompanies] = useState<typeObjectCompanies[]>([]);
+  const [state, dispatch] = reducerFilters();
+  // FAZENDO A REQUISIÇÃO AO ABRIR A TELA
+  useEffect(() => {
+    getCompanies();
+  }, []);
 
-  const request = async () => {
-    let req = await fetch('http://localhost/audax/php/confere_senha.php', {
-      method: 'POST',
-      body: JSON.stringify({
-        "chave":emailValue,
-        "senha":'c4ca4238a0b923820dcc509a6f75849b'
-      }),
-      headers: { 'Content-type': 'application/json' }
-    });
-    let json = await req.json();
-    console.log(json)
+  // FUNÇÃO QUE FAZ A REQUISIÇÃO
+  const getCompanies = async () => {
+    let request = await fetch('http://localhost/audax/php/empresas.php');
+    let json = await request.json();
+    setStateCompanies(json.Empresas);
   }
 
-  const [emailValue, setEmailValue] = useState<string>('');
-  const [passwordValue, setPasswordValue] = useState<string>('');
+    // FILTROS
+    // ORDEM ALFABÉTICA
+  const filterAlphabeticalOrder = () => {
+    let newState = [...stateCompanies];
+    newState.sort((a,b) => ( a.razao_social > b.razao_social ) ? 1 : -1);
+    setStateCompanies(newState)
+  }
 
-  const clickSendEmail = (e: ChangeEvent<HTMLInputElement>) => {
-    setEmailValue(e.target.value)
-  }
-  const clickSendPassword = (e: ChangeEvent<HTMLInputElement>) => {
-    setPasswordValue(e.target.value);
-  }
-  const sendInfo = (e: any) => {
-    e.preventDefault();
-    if (emailValue && passwordValue) {
-      request();
-    } else {
-      alert('Preencha todos os campos!!!')
+  // ORDEM POR TIPO DE EMPRESA
+  const filterTypeCompanieOrder = (e: ChangeEvent<HTMLSelectElement>) => {
+    let newState = [...stateCompanies];
+    switch(e.target.value) {
+      case '0':
+        newState = newState.filter( uf => uf.id_categoria == e.target.value );
+        console.log(newState)
+        return newState;
+      break;
+      case '1':
+        newState = newState.filter( uf => uf.id_categoria == e.target.value );
+        console.log(newState)
+        return newState;
+      break;
     }
+    
+    return newState;
   }
+
+
+  // ORDEM POR ESTADO DO PAÍS
+  const filterUFCompanie = (e: ChangeEvent<HTMLSelectElement>) => {
+    let newState = [...stateCompanies];
+    switch(e.target.value) {
+      case 'PI':
+        newState = newState.filter( uf => uf.end_uf == e.target.value );
+        console.log(newState)
+        return newState;
+      break;
+      case 'SP':
+        newState = newState.filter( uf => uf.end_uf == e.target.value );
+        console.log(newState)
+        return newState;
+      break;
+    }
+
+    return newState;
+  }
+
+  // ORDEM POR DATA DE CADASTRO
+  const filterDataRegisterCompanie = (e: ChangeEvent<HTMLInputElement>) => {
+    let dateSelected = e.target.value;
+    let newState = [...stateCompanies];
+    let dateCompanie = newState.filter( item => item.data_edicao.split(' ')[0] == dateSelected)
+    console.log(dateCompanie)
+  }
+
 
   return (
-    <div className={styles.container}>
+    <Container>
+      <div className="filtersArea">
+        <div className="titleTable">
+          <h1>Tabela de Empresas</h1>
+        </div>
 
-      <div className={styles.areaLogin}>
-
-        <h2>Login</h2>
-
-        <form action="" method="POST" >
-
-          <input
-            name="chave"
-            type="text"
-            placeholder="Informe seu Email"
-            value={emailValue}
-            onChange={clickSendEmail}
-          />
-
-          <input
-            name="senha"
-            type="password"
-            placeholder="Informe sua Senha"
-            value={passwordValue}
-            onChange={clickSendPassword}
-          />
-
-          <button onClick={sendInfo}>Enviar</button>
-
-        </form>
-
+        <div className="filters">
+          <nav>
+            <ul>
+              <li onClick={filterAlphabeticalOrder}>Ordem Alfabética</li>
+              <select name="" id="" onChange={filterTypeCompanieOrder}>
+                <option value="">Filtrar por</option>
+                <option value="0">Distribuidora</option>
+                <option value="1">Ótica</option>
+              </select>
+              <input type="date" onChange={filterDataRegisterCompanie}/>
+              <select name="" id="" onChange={filterUFCompanie}>
+                <option value="">Selecionar estado</option>
+                <option value="SP">SP</option>
+                <option value="PI">PI</option>
+              </select>
+            </ul>
+          </nav>
+        </div>
       </div>
 
-    </div>
+      <div className="tableArea">
+
+        <table>
+          <thead>
+            <tr>
+              <th>CNPJ</th>
+              <th>Razão Social</th>
+              <th>E-mail para contato</th>
+              <th>Categoria</th>
+              <th>Estado</th>
+              <th>Data de cadastro</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {stateCompanies.map((companie, index) => (
+              <tr key={index}>
+                <td> {companie.cnpj} </td>
+                <td> {companie.razao_social} </td>
+                <td> {companie.email} </td>
+                <td> {companie.id_categoria} </td>
+                <td> {companie.end_uf} </td>
+                <td> {companie.data_edicao} </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+      </div>
+    </Container>
   )
 }
 
